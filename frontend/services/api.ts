@@ -13,7 +13,7 @@ import { getToken } from './storage';
 // For emulator, use 10.0.2.2 (Android) or localhost (iOS)
 const BASE_URL = __DEV__
   ? `http://${process.env.EXPO_PUBLIC_API_IP}:${process.env.EXPO_PUBLIC_API_PORT}/api`
-  : 'http://localhost:5000/api';
+  : `https://${process.env.EXPO_PUBLIC_API_IP}/api`;
 
 // Override for physical device — set your computer's IP here
 // const BASE_URL = 'http://192.168.x.x:5000/api';
