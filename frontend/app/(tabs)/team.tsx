@@ -22,6 +22,7 @@ import { CATEGORIES } from '@/constants/categories';
 export default function TeamScreen() {
   const {
     user, team, members, expenses, budgets, isDarkMode, dispatch, categoryBreakdown,
+    logout,
   } = useApp();
   const router = useRouter();
 
@@ -64,18 +65,18 @@ export default function TeamScreen() {
         {/* Profile */}
         <View style={styles.profile}>
           <View style={styles.avatarLg}>
-            <Text style={styles.avatarLgTxt}>{user.name[0]}</Text>
+            <Text style={styles.avatarLgTxt}>{user?.name?.[0] || '?'}</Text>
           </View>
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
+          <Text style={styles.userName}>{user?.name || 'User'}</Text>
+          <Text style={styles.userEmail}>{user?.email || ''}</Text>
           <View style={styles.roleBadge}>
             <Ionicons
-              name={user.role === 'admin' ? 'shield-checkmark' : 'person'}
+              name={user?.role === 'admin' ? 'shield-checkmark' : 'person'}
               size={14}
               color="#FFF"
             />
             <Text style={styles.roleText}>
-              {user.role === 'admin' ? 'Admin' : 'Member'}
+              {user?.role === 'admin' ? 'Admin' : 'Member'}
             </Text>
           </View>
         </View>
@@ -86,31 +87,33 @@ export default function TeamScreen() {
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         {/* Team Info */}
-        <View
-          style={[styles.teamCard, { backgroundColor: card, borderColor: border }]}
-        >
-          <View style={styles.teamRow}>
-            <View>
-              <Text style={[styles.teamName, { color: text }]}>{team.name}</Text>
-              <Text style={[styles.teamSub, { color: textSec }]}>
-                {members.length} members
-              </Text>
-            </View>
-            <View style={[styles.codeBox, { backgroundColor: '#6C5CE715' }]}>
-              <Text style={styles.codeLabel}>Invite Code</Text>
-              <Text style={styles.codeVal}>{team.inviteCode}</Text>
+        {team && (
+          <View
+            style={[styles.teamCard, { backgroundColor: card, borderColor: border }]}
+          >
+            <View style={styles.teamRow}>
+              <View>
+                <Text style={[styles.teamName, { color: text }]}>{team.name}</Text>
+                <Text style={[styles.teamSub, { color: textSec }]}>
+                  {members.length} members
+                </Text>
+              </View>
+              <View style={[styles.codeBox, { backgroundColor: '#6C5CE715' }]}>
+                <Text style={styles.codeLabel}>Invite Code</Text>
+                <Text style={styles.codeVal}>{team.inviteCode}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Members */}
         <View style={styles.sec}>
           <Text style={[styles.secTitle, { color: text }]}>Team Members</Text>
           {members.map(m => {
-            const spend = getMemberSpend(m.id);
+            const spend = getMemberSpend(m._id);
             return (
               <View
-                key={m.id}
+                key={m._id}
                 style={[
                   styles.memberCard,
                   { backgroundColor: card, borderColor: border },
@@ -235,9 +238,9 @@ export default function TeamScreen() {
                 styles.actionBtn,
                 { backgroundColor: card, borderColor: border },
               ]}
-              onPress={() => {
+              onPress={async () => {
                 if (item.label === 'Sign Out') {
-                  dispatch({ type: 'LOGOUT' });
+                  await logout();
                   router.replace('/login');
                 } else {
                   Alert.alert(item.label, 'Feature ready for production!');

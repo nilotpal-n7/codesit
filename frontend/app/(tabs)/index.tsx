@@ -87,9 +87,9 @@ export default function DashboardScreen() {
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.greeting}>
-              Hello, {user.name.split(" ")[0]} 👋
+              Hello, {user?.name?.split(" ")[0] || 'there'} 👋
             </Text>
-            <Text style={styles.teamName}>{team.name}</Text>
+            <Text style={styles.teamName}>{team?.name || 'Solo Mode'}</Text>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
@@ -307,7 +307,7 @@ export default function DashboardScreen() {
                 CATEGORIES[5];
               return (
                 <TouchableOpacity
-                  key={expense.id}
+                  key={expense._id}
                   style={[
                     styles.txnCard,
                     { backgroundColor: card, borderColor: border },

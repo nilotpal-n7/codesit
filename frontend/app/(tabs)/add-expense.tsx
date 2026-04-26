@@ -13,7 +13,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ScrollView, Alert,
+  ScrollView, Alert, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,14 +23,15 @@ import { useApp } from '@/context/app-context';
 import { CATEGORIES } from '@/constants/categories';
 
 export default function AddExpenseScreen() {
-  const { dispatch, members, user, team, isDarkMode } = useApp();
+  const { addExpense, members, user, isDarkMode, isLoading } = useApp();
   const router = useRouter();
 
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
-  const [selectedMember, setSelectedMember] = useState(user.id);
+  const [selectedMember, setSelectedMember] = useState(user?._id || '');
   const [date] = useState(new Date());
+  const [saving, setSaving] = useState(false);
 
   const bg = isDarkMode ? '#0D1117' : '#F8F9FE';
   const card = isDarkMode ? '#161B22' : '#FFFFFF';
@@ -39,27 +40,32 @@ export default function AddExpenseScreen() {
   const border = isDarkMode ? '#21262D' : '#E8ECF4';
   const inputBg = isDarkMode ? '#1C2333' : '#F8F9FE';
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!amount || !category) {
       Alert.alert('Missing Fields', 'Please enter amount and select a category.');
       return;
     }
 
-    const expense = {
-      id: 'exp_' + Date.now(),
-      amount: parseFloat(amount),
-      category,
-      memberId: selectedMember,
-      memberName: members.find(m => m.id === selectedMember)?.name || user.name,
-      teamId: team.id,
-      dateTime: date.toISOString(),
-      note: note || `${category} expense`,
-      receiptUrl: null,
-    };
-
-    dispatch({ type: 'ADD_EXPENSE', payload: expense });
-    // Navigate to dashboard
-    router.push('/(tabs)');
+    setSaving(true);
+    try {
+      await addExpense({
+        amount: parseFloat(amount),
+        category,
+        memberId: selectedMember || user?._id,
+        memberName: members.find(m => m._id === selectedMember)?.name || user?.name || 'You',
+        dateTime: date.toISOString(),
+        note: note || `${category} expense`,
+      });
+      // Reset form and navigate
+      setAmount('');
+      setCategory('');
+      setNote('');
+      router.push('/(tabs)');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to save expense');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -135,26 +141,26 @@ export default function AddExpenseScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {members.map(member => (
               <TouchableOpacity
-                key={member.id}
+                key={member._id}
                 style={[
                   styles.memberChip,
                   {
                     backgroundColor: card,
                     borderColor:
-                      selectedMember === member.id ? '#6C5CE7' : border,
+                      selectedMember === member._id ? '#6C5CE7' : border,
                   },
-                  selectedMember === member.id && {
+                  selectedMember === member._id && {
                     backgroundColor: '#6C5CE715',
                   },
                 ]}
-                onPress={() => setSelectedMember(member.id)}
+                onPress={() => setSelectedMember(member._id)}
               >
                 <View
                   style={[
                     styles.avatar,
                     {
                       backgroundColor:
-                        selectedMember === member.id ? '#6C5CE7' : '#B2BEC3',
+                        selectedMember === member._id ? '#6C5CE7' : '#B2BEC3',
                     },
                   ]}
                 >
@@ -165,7 +171,7 @@ export default function AddExpenseScreen() {
                     styles.memberName,
                     {
                       color:
-                        selectedMember === member.id ? '#6C5CE7' : text,
+                        selectedMember === member._id ? '#6C5CE7' : text,
                     },
                   ]}
                 >

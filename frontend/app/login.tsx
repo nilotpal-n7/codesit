@@ -1,12 +1,12 @@
 /**
  * Login / Sign-Up Screen.
- * Provides email + password form with Sign In / Sign Up toggle.
- * On submit, dispatches LOGIN and redirects to the main tabs.
+ * Now wired to the real API — register/login creates actual database records.
  */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  KeyboardAvoidingView, Platform, Animated, ScrollView,
+  KeyboardAvoidingView, Platform, Animated, ScrollView, Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,11 +15,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useApp } from '@/context/app-context';
 
 export default function LoginScreen() {
-  const { dispatch } = useApp();
+  const { login, register, isLoading } = useApp();
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('arjun@team.com');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -33,9 +33,28 @@ export default function LoginScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleLogin = () => {
-    dispatch({ type: 'LOGIN' });
-    router.replace('/(tabs)');
+  const handleSubmit = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Missing Fields', 'Please enter email and password.');
+      return;
+    }
+
+    try {
+      if (isLogin) {
+        await login(email.trim(), password);
+        router.replace('/(tabs)');
+      } else {
+        if (!name.trim()) {
+          Alert.alert('Missing Name', 'Please enter your full name.');
+          return;
+        }
+        await register(name.trim(), email.trim(), password);
+        // After registration, go to onboarding to create/join team (optional)
+        router.replace('/onboarding' as any);
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Something went wrong');
+    }
   };
 
   return (
@@ -92,6 +111,16 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Seed login hint */}
+            {isLogin && (
+              <View style={styles.hint}>
+                <Ionicons name="information-circle" size={16} color="#6C5CE7" />
+                <Text style={styles.hintText}>
+                  Demo: arjun@team.com / password123
+                </Text>
+              </View>
+            )}
+
             {/* Name field (sign up only) */}
             {!isLogin && (
               <View style={styles.inputGroup}>
@@ -139,42 +168,25 @@ export default function LoginScreen() {
               />
             </View>
 
-            {isLogin && (
-              <TouchableOpacity style={styles.forgotBtn}>
-                <Text style={styles.forgotText}>Forgot Password?</Text>
-              </TouchableOpacity>
-            )}
-
             {/* Submit button */}
-            <TouchableOpacity onPress={handleLogin} activeOpacity={0.8}>
+            <TouchableOpacity onPress={handleSubmit} activeOpacity={0.8} disabled={isLoading}>
               <LinearGradient
                 colors={['#6C5CE7', '#A29BFE']}
-                style={styles.loginBtn}
+                style={[styles.loginBtn, isLoading && { opacity: 0.7 }]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
-                <Text style={styles.loginBtnText}>
-                  {isLogin ? 'Sign In' : 'Create Account'}
-                </Text>
-                <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                {isLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Text style={styles.loginBtnText}>
+                      {isLogin ? 'Sign In' : 'Create Account'}
+                    </Text>
+                    <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                  </>
+                )}
               </LinearGradient>
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google button */}
-            <TouchableOpacity
-              style={styles.googleBtn}
-              onPress={handleLogin}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="logo-google" size={20} color="#E17055" />
-              <Text style={styles.googleBtnText}>Google</Text>
             </TouchableOpacity>
           </Animated.View>
         </ScrollView>
@@ -226,7 +238,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F3F8',
     borderRadius: 14,
     padding: 4,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   tab: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
   tabActive: {
@@ -239,6 +251,16 @@ const styles = StyleSheet.create({
   },
   tabText: { fontSize: 15, fontWeight: '600', color: '#B2BEC3' },
   tabTextActive: { color: '#6C5CE7' },
+  hint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6C5CE710',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 16,
+    gap: 6,
+  },
+  hintText: { fontSize: 12, color: '#6C5CE7', fontWeight: '500' },
   inputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -256,8 +278,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1A1A2E',
   },
-  forgotBtn: { alignSelf: 'flex-end', marginBottom: 20 },
-  forgotText: { fontSize: 13, color: '#6C5CE7', fontWeight: '600' },
   loginBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -265,21 +285,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 14,
     gap: 8,
+    marginTop: 8,
   },
   loginBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#E8ECF4' },
-  dividerText: { marginHorizontal: 12, fontSize: 12, color: '#B2BEC3' },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: '#F8F9FE',
-    borderWidth: 1,
-    borderColor: '#E8ECF4',
-    gap: 8,
-  },
-  googleBtnText: { fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
 });
