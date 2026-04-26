@@ -15,7 +15,7 @@
 
 import React, {
   createContext, useContext, useReducer, useMemo,
-  useCallback, useEffect, type ReactNode,
+  useCallback, useEffect, useRef, type ReactNode,
 } from 'react';
 import { authAPI, teamsAPI, expensesAPI, analyticsAPI } from '@/services/api';
 import {
@@ -357,10 +357,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Use cached data if available
       const cached = await getTeam();
       if (cached) {
-        dispatch({ type: 'SET_TEAM', payload: { team: cached, members: state.members } });
+        dispatch({ type: 'SET_TEAM', payload: { team: cached, members: [] } });
       }
     }
-  }, [state.user?.teamId, state.members]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.user?.teamId]);
 
   // ─── Expense actions ─────────────────────────────────────────────────────
 
@@ -400,12 +401,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [state.isDarkMode, state.isInitialized]);
 
-  // ─── Auto-fetch data when logged in ──────────────────────────────────────
+  // ─── Auto-fetch data when logged in (once per session) ────────────────────
+
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    if (state.isLoggedIn && state.isInitialized) {
+    if (state.isLoggedIn && state.isInitialized && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       fetchExpenses();
       fetchTeamData();
+    }
+    if (!state.isLoggedIn) {
+      hasFetchedRef.current = false;
     }
   }, [state.isLoggedIn, state.isInitialized, fetchExpenses, fetchTeamData]);
 

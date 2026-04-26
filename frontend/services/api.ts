@@ -12,7 +12,7 @@ import { getToken } from './storage';
 // For Expo Go on physical device, use your computer's local IP (e.g. 192.168.x.x)
 // For emulator, use 10.0.2.2 (Android) or localhost (iOS)
 const BASE_URL = __DEV__
-  ? 'http://10.0.2.2:5000/api'  // Android emulator
+  ? `http://${process.env.EXPO_PUBLIC_API_IP}:${process.env.EXPO_PUBLIC_API_PORT}/api`
   : 'http://localhost:5000/api';
 
 // Override for physical device — set your computer's IP here
