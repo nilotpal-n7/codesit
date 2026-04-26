@@ -1,13 +1,12 @@
 /**
- * Analytics Screen.
+ * Analytics Screen — redesigned.
  *
- * Shows:
- * - Summary header (total spent, transactions, categories)
- * - Chart type tabs (pie / bar / line)
- * - Category details table
+ * Clean card layout with:
+ * - Summary header (total, txns, categories)
+ * - Chart type toggle
+ * - Charts (pie, bar, line)
+ * - Category details
  * - Spending leaderboard
- *
- * Uses react-native-chart-kit for pie, bar, and line charts.
  */
 import React, { useState } from 'react';
 import {
@@ -17,11 +16,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useApp } from '@/context/app-context';
-
 import { PieChart, BarChart, LineChart } from 'react-native-chart-kit';
+import { getTheme, Radius, Shadows, Typography } from '@/constants/theme';
 
 const { width } = Dimensions.get('window');
-const chartWidth = width - 40;
+const chartW = width - 72;
 
 export default function AnalyticsScreen() {
   const {
@@ -30,37 +29,27 @@ export default function AnalyticsScreen() {
   } = useApp();
   const [activeChart, setActiveChart] = useState<'pie' | 'bar' | 'line'>('pie');
 
-  const bg = isDarkMode ? '#0D1117' : '#F8F9FE';
-  const card = isDarkMode ? '#161B22' : '#FFFFFF';
-  const text = isDarkMode ? '#F0F6FC' : '#1A1A2E';
-  const textSec = isDarkMode ? '#8B949E' : '#636E72';
-  const border = isDarkMode ? '#21262D' : '#E8ECF4';
-
-  const formatCurrency = (amt: number) => `₹${amt.toLocaleString('en-IN')}`;
+  const t = getTheme(isDarkMode);
+  const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
   const chartConfig = {
-    backgroundGradientFrom: isDarkMode ? '#161B22' : '#FFFFFF',
-    backgroundGradientTo: isDarkMode ? '#161B22' : '#FFFFFF',
-    color: (opacity = 1) =>
-      isDarkMode
-        ? `rgba(162, 155, 254, ${opacity})`
-        : `rgba(108, 92, 231, ${opacity})`,
-    labelColor: (opacity = 1) =>
-      isDarkMode
-        ? `rgba(240, 246, 252, ${opacity})`
-        : `rgba(26, 26, 46, ${opacity})`,
+    backgroundGradientFrom: t.card,
+    backgroundGradientTo: t.card,
+    color: (opacity = 1) => isDarkMode
+      ? `rgba(124, 110, 247, ${opacity})`
+      : `rgba(108, 92, 231, ${opacity})`,
+    labelColor: (opacity = 1) => isDarkMode
+      ? `rgba(232, 233, 240, ${opacity})`
+      : `rgba(26, 27, 46, ${opacity})`,
     strokeWidth: 2,
     barPercentage: 0.6,
     decimalCount: 0,
     propsForBackgroundLines: {
       strokeDasharray: '',
-      stroke: isDarkMode ? '#21262D' : '#F1F3F8',
+      stroke: t.divider,
       strokeWidth: 1,
     },
-    propsForLabels: {
-      fontSize: 11,
-      fontWeight: '600',
-    },
+    propsForLabels: { fontSize: 11, fontWeight: '600' },
   };
 
   const pieData = categoryBreakdown
@@ -69,7 +58,7 @@ export default function AnalyticsScreen() {
       name: c.name,
       amount: c.amount,
       color: c.color,
-      legendFontColor: textSec,
+      legendFontColor: t.textSecondary,
       legendFontSize: 12,
     }));
 
@@ -92,9 +81,12 @@ export default function AnalyticsScreen() {
   const renderChart = () => {
     if (!PieChart || !BarChart || !LineChart) {
       return (
-        <Text style={[styles.noData, { color: textSec }]}>
-          Chart library not installed. Run: npm install react-native-chart-kit
-        </Text>
+        <View style={styles.empty}>
+          <Ionicons name="analytics-outline" size={40} color={t.textTertiary} />
+          <Text style={[Typography.body, { color: t.textTertiary, marginTop: 8 }]}>
+            Install react-native-chart-kit
+          </Text>
+        </View>
       );
     }
 
@@ -102,59 +94,45 @@ export default function AnalyticsScreen() {
       return pieData.length > 0 ? (
         <PieChart
           data={pieData}
-          width={chartWidth - 32}
-          height={220}
+          width={chartW}
+          height={200}
           chartConfig={chartConfig}
           accessor="amount"
           backgroundColor="transparent"
-          paddingLeft="15"
+          paddingLeft="10"
           absolute
           hasLegend
         />
-      ) : (
-        <Text style={[styles.noData, { color: textSec }]}>
-          No data for this period
-        </Text>
-      );
+      ) : <EmptyChart theme={t} />;
     }
 
     if (activeChart === 'bar') {
       return memberBreakdown.length > 0 ? (
         <BarChart
           data={barData}
-          width={chartWidth - 32}
-          height={260}
+          width={chartW}
+          height={240}
           chartConfig={{ ...chartConfig, barPercentage: 0.7 }}
-          style={styles.chart}
+          style={{ borderRadius: Radius.lg, marginLeft: -8 }}
           showValuesOnTopOfBars
           fromZero
           withInnerLines
           yAxisLabel="₹"
           yAxisSuffix=""
         />
-      ) : (
-        <Text style={[styles.noData, { color: textSec }]}>
-          No data for this period
-        </Text>
-      );
+      ) : <EmptyChart theme={t} />;
     }
 
-    // line chart
     return (
       <LineChart
         data={lineData}
-        width={chartWidth - 32}
-        height={260}
+        width={chartW}
+        height={240}
         chartConfig={{
           ...chartConfig,
-          propsForDots: {
-            r: '6',
-            strokeWidth: '2',
-            stroke: '#6C5CE7',
-            fill: '#A29BFE',
-          },
+          propsForDots: { r: '5', strokeWidth: '2', stroke: t.accent, fill: t.accentLight },
         }}
-        style={styles.chart}
+        style={{ borderRadius: Radius.lg, marginLeft: -8 }}
         bezier
         withDots
         withShadow
@@ -167,175 +145,146 @@ export default function AnalyticsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: bg }]}>
-      <StatusBar style="light" />
-      <LinearGradient
-        colors={['#6C5CE7', '#A29BFE']}
-        style={styles.header}
-      >
-        <Text style={styles.headerTitle}>Analytics</Text>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Total Spent</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(totalSpend)}</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Transactions</Text>
-            <Text style={styles.summaryValue}>{filteredExpenses.length}</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Categories</Text>
-            <Text style={styles.summaryValue}>
-              {categoryBreakdown.filter(c => c.amount > 0).length}
-            </Text>
-          </View>
-        </View>
-      </LinearGradient>
+    <View style={[styles.container, { backgroundColor: t.bg }]}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: t.card, borderBottomColor: t.border }]}>
+        <Text style={[Typography.headingLarge, { color: t.text }]}>Analytics</Text>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* Summary Cards */}
+        <View style={styles.summaryRow}>
+          {[
+            { label: 'Total Spent', value: fmt(totalSpend), icon: 'trending-up' as const, color: t.danger, bg: t.dangerSoft },
+            { label: 'Transactions', value: String(filteredExpenses.length), icon: 'receipt' as const, color: t.info, bg: t.infoSoft },
+            { label: 'Categories', value: String(categoryBreakdown.filter(c => c.amount > 0).length), icon: 'grid' as const, color: t.accent, bg: t.accentSoft },
+          ].map((item, i) => (
+            <View key={i} style={[styles.summaryCard, { backgroundColor: t.card }, Shadows.card(isDarkMode)]}>
+              <View style={[styles.summaryIcon, { backgroundColor: item.bg }]}>
+                <Ionicons name={item.icon} size={18} color={item.color} />
+              </View>
+              <Text style={[Typography.captionSmall, { color: t.textSecondary, marginTop: 6 }]}>{item.label}</Text>
+              <Text style={[Typography.headingSmall, { color: t.text, marginTop: 2 }]}>{item.value}</Text>
+            </View>
+          ))}
+        </View>
+
         {/* Chart Type Tabs */}
-        <View style={styles.chartTabs}>
+        <View style={[styles.chartTabs, { backgroundColor: t.card, borderColor: t.border }]}>
           {chartTabs.map(tab => (
             <TouchableOpacity
               key={tab.key}
               style={[
                 styles.chartTab,
-                activeChart === tab.key && styles.chartTabActive,
+                activeChart === tab.key && { backgroundColor: t.accent },
               ]}
               onPress={() => setActiveChart(tab.key)}
             >
               <Ionicons
                 name={tab.icon as keyof typeof Ionicons.glyphMap}
-                size={18}
-                color={activeChart === tab.key ? '#FFF' : '#6C5CE7'}
+                size={16}
+                color={activeChart === tab.key ? '#FFF' : t.accent}
               />
-              <Text
-                style={[
-                  styles.chartTabText,
-                  activeChart === tab.key && styles.chartTabTextActive,
-                ]}
-              >
+              <Text style={[
+                Typography.captionSmall,
+                { color: activeChart === tab.key ? '#FFF' : t.accent },
+              ]}>
                 {tab.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Charts */}
-        <View
-          style={[styles.chartCard, { backgroundColor: card, borderColor: border }]}
-        >
-          <Text style={[styles.chartTitle, { color: text }]}>
-            {activeChart === 'pie'
-              ? 'Category Breakdown'
-              : activeChart === 'bar'
-              ? 'Member-wise Spending'
-              : 'Monthly Spending Trend'}
+        {/* Chart */}
+        <View style={[styles.chartCard, { backgroundColor: t.card, borderColor: t.border }, Shadows.card(isDarkMode)]}>
+          <Text style={[Typography.headingMedium, { color: t.text, marginBottom: 12 }]}>
+            {activeChart === 'pie' ? 'Category Breakdown'
+              : activeChart === 'bar' ? 'Member Spending'
+              : 'Monthly Trend'}
           </Text>
           {renderChart()}
         </View>
 
         {/* Category Details */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: text }]}>
+          <Text style={[Typography.headingMedium, { color: t.text, marginBottom: 12 }]}>
             Category Details
           </Text>
-          {categoryBreakdown.map(cat => (
-            <View
-              key={cat.id}
-              style={[
-                styles.detailRow,
-                { backgroundColor: card, borderColor: border },
-              ]}
-            >
-              <View style={styles.detailLeft}>
-                <View
-                  style={[styles.detailDot, { backgroundColor: cat.color }]}
-                />
-                <View>
-                  <Text style={[styles.detailName, { color: text }]}>
-                    {cat.name}
+          <View style={[styles.detailList, { backgroundColor: t.card, borderColor: t.border }, Shadows.card(isDarkMode)]}>
+            {categoryBreakdown.map((cat, i) => (
+              <View
+                key={cat.id}
+                style={[
+                  styles.detailRow,
+                  i < categoryBreakdown.length - 1 && { borderBottomWidth: 1, borderBottomColor: t.divider },
+                ]}
+              >
+                <View style={[styles.detailDot, { backgroundColor: cat.color }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.bodySemibold, { color: t.text }]}>{cat.name}</Text>
+                  <Text style={[Typography.captionSmall, { color: t.textTertiary, marginTop: 2 }]}>
+                    {filteredExpenses.filter(e => e.category === cat.name).length} transactions
                   </Text>
-                  <Text style={[styles.detailCount, { color: textSec }]}>
-                    {filteredExpenses.filter(e => e.category === cat.name).length}{' '}
-                    transactions
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={[Typography.bodySemibold, { color: t.text }]}>{fmt(cat.amount)}</Text>
+                  <Text style={[
+                    Typography.captionSmall,
+                    { color: cat.budgetUsed > 80 ? t.danger : t.success, marginTop: 2 },
+                  ]}>
+                    {Math.round(cat.budgetUsed)}% of budget
                   </Text>
                 </View>
               </View>
-              <View style={styles.detailRight}>
-                <Text style={[styles.detailAmount, { color: text }]}>
-                  {formatCurrency(cat.amount)}
-                </Text>
-                <Text
-                  style={[
-                    styles.detailPct,
-                    { color: cat.budgetUsed > 80 ? '#FF6B6B' : '#00B894' },
-                  ]}
-                >
-                  {Math.round(cat.budgetUsed)}% of budget
-                </Text>
-              </View>
-            </View>
-          ))}
+            ))}
+          </View>
         </View>
 
         {/* Leaderboard */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: text }]}>
+          <Text style={[Typography.headingMedium, { color: t.text, marginBottom: 12 }]}>
             Spending Leaderboard
           </Text>
-          {memberBreakdown.map((member, i) => (
-            <View
-              key={member.memberId}
-              style={[
-                styles.leaderRow,
-                { backgroundColor: card, borderColor: border },
-              ]}
-            >
+          <View style={[styles.detailList, { backgroundColor: t.card, borderColor: t.border }, Shadows.card(isDarkMode)]}>
+            {memberBreakdown.map((member, i) => (
               <View
+                key={member.memberId}
                 style={[
-                  styles.rank,
-                  {
-                    backgroundColor:
-                      i === 0
-                        ? '#FDCB6E'
-                        : i === 1
-                        ? '#B2BEC3'
-                        : i === 2
-                        ? '#E17055'
-                        : '#F1F3F8',
-                  },
+                  styles.leaderRow,
+                  i < memberBreakdown.length - 1 && { borderBottomWidth: 1, borderBottomColor: t.divider },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.rankText,
-                    { color: i < 3 ? '#FFF' : textSec },
-                  ]}
-                >
-                  #{i + 1}
-                </Text>
+                <View style={[
+                  styles.rank,
+                  { backgroundColor: i === 0 ? '#FDCB6E' : i === 1 ? '#B2BEC3' : i === 2 ? '#E17055' : t.divider },
+                ]}>
+                  <Text style={[Typography.captionSmall, { color: i < 3 ? '#FFF' : t.textSecondary, fontWeight: '800' }]}>
+                    #{i + 1}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[Typography.bodySemibold, { color: t.text }]}>{member.name}</Text>
+                  <Text style={[Typography.captionSmall, { color: t.textTertiary, marginTop: 2 }]}>
+                    {member.count} expenses
+                  </Text>
+                </View>
+                <Text style={[Typography.bodySemibold, { color: t.text }]}>{fmt(member.amount)}</Text>
               </View>
-              <View style={styles.leaderInfo}>
-                <Text style={[styles.leaderName, { color: text }]}>
-                  {member.name}
-                </Text>
-                <Text style={[styles.leaderCount, { color: textSec }]}>
-                  {member.count} expenses
-                </Text>
-              </View>
-              <Text style={[styles.leaderAmount, { color: text }]}>
-                {formatCurrency(member.amount)}
-              </Text>
-            </View>
-          ))}
+            ))}
+          </View>
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+function EmptyChart({ theme }: { theme: any }) {
+  return (
+    <View style={styles.empty}>
+      <Ionicons name="analytics-outline" size={40} color={theme.textTertiary} />
+      <Text style={[Typography.body, { color: theme.textTertiary, marginTop: 8 }]}>No data for this period</Text>
     </View>
   );
 }
@@ -343,92 +292,72 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingTop: 54,
+    paddingBottom: 16,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFF',
-    textAlign: 'center',
-    marginBottom: 16,
+    borderBottomWidth: 1,
   },
   summaryRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 16,
-    padding: 16,
+    paddingHorizontal: 20,
+    gap: 10,
+    marginTop: 16,
   },
-  summaryItem: { alignItems: 'center' },
-  summaryLabel: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '500',
+  summaryCard: {
+    flex: 1,
+    padding: 14,
+    borderRadius: Radius.lg,
+    alignItems: 'center',
   },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFF',
-    marginTop: 4,
+  summaryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  summaryDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)' },
   chartTabs: {
     flexDirection: 'row',
     marginHorizontal: 20,
     marginTop: 16,
-    gap: 8,
+    padding: 4,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    gap: 4,
   },
   chartTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: '#6C5CE715',
-    gap: 6,
+    paddingVertical: 10,
+    borderRadius: Radius.md,
+    gap: 4,
   },
-  chartTabActive: { backgroundColor: '#6C5CE7' },
-  chartTabText: { fontSize: 12, fontWeight: '600', color: '#6C5CE7' },
-  chartTabTextActive: { color: '#FFF' },
   chartCard: {
     margin: 20,
-    padding: 16,
-    borderRadius: 20,
+    padding: 20,
+    borderRadius: Radius.xl,
     borderWidth: 1,
   },
-  chartTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
-  chart: { borderRadius: 16, marginLeft: -8 },
-  noData: { textAlign: 'center', padding: 40 },
   section: { paddingHorizontal: 20, marginBottom: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  detailList: {
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
   detailRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 8,
-    borderWidth: 1,
+    padding: 16,
+    gap: 12,
   },
-  detailLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   detailDot: { width: 10, height: 10, borderRadius: 5 },
-  detailName: { fontSize: 14, fontWeight: '600' },
-  detailCount: { fontSize: 11, marginTop: 2 },
-  detailRight: { alignItems: 'flex-end' },
-  detailAmount: { fontSize: 15, fontWeight: '700' },
-  detailPct: { fontSize: 11, fontWeight: '500', marginTop: 2 },
   leaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 8,
-    borderWidth: 1,
+    padding: 16,
+    gap: 12,
   },
   rank: {
     width: 32,
@@ -436,11 +365,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  rankText: { fontSize: 12, fontWeight: '800' },
-  leaderInfo: { flex: 1 },
-  leaderName: { fontSize: 14, fontWeight: '600' },
-  leaderCount: { fontSize: 11, marginTop: 2 },
-  leaderAmount: { fontSize: 15, fontWeight: '700' },
+  empty: { padding: 40, alignItems: 'center' },
 });

@@ -1,6 +1,5 @@
 /**
- * Login / Sign-Up Screen.
- * Now wired to the real API — register/login creates actual database records.
+ * Login / Sign-Up Screen — redesigned with clean card UI + dark mode.
  */
 import React, { useState, useRef, useEffect } from 'react';
 import {
@@ -13,10 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useApp } from '@/context/app-context';
+import { getTheme, Radius, Shadows, Typography } from '@/constants/theme';
 
 export default function LoginScreen() {
-  const { login, register, isLoading } = useApp();
+  const { login, register, isLoading, isDarkMode } = useApp();
   const router = useRouter();
+  const t = getTheme(isDarkMode);
+
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +40,6 @@ export default function LoginScreen() {
       Alert.alert('Missing Fields', 'Please enter email and password.');
       return;
     }
-
     try {
       if (isLogin) {
         await login(email.trim(), password);
@@ -49,7 +50,6 @@ export default function LoginScreen() {
           return;
         }
         await register(name.trim(), email.trim(), password);
-        // After registration, go to onboarding to create/join team (optional)
         router.replace('/onboarding' as any);
       }
     } catch (err: any) {
@@ -58,25 +58,22 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <View style={[styles.container, { backgroundColor: t.bg }]}>
+      <StatusBar style={isDarkMode ? 'light' : 'light'} />
+
+      {/* Header */}
       <LinearGradient
-        colors={['#6C5CE7', '#A29BFE']}
+        colors={isDarkMode ? ['#2A1F5E', '#141625'] : ['#6C5CE7', '#A29BFE']}
         style={styles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <Animated.View
-          style={[
-            styles.headerContent,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-          ]}
-        >
+        <Animated.View style={[styles.headerContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.logoIcon}>
             <Ionicons name="wallet" size={32} color="#6C5CE7" />
           </View>
-          <Text style={styles.headerTitle}>Welcome Back</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[Typography.displayMedium, { color: '#FFF' }]}>Welcome Back</Text>
+          <Text style={[Typography.body, { color: 'rgba(255,255,255,0.7)', marginTop: 4 }]}>
             Track your team&apos;s expenses smartly
           </Text>
         </Animated.View>
@@ -86,51 +83,41 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.formContainer}
       >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
-            {/* Sign In / Sign Up toggle */}
-            <View style={styles.tabBar}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <Animated.View style={[styles.card, { backgroundColor: t.card, borderColor: t.border, opacity: fadeAnim }, Shadows.cardStrong(isDarkMode)]}>
+
+            {/* Toggle */}
+            <View style={[styles.tabBar, { backgroundColor: t.input }]}>
               <TouchableOpacity
-                style={[styles.tab, isLogin && styles.tabActive]}
+                style={[styles.tab, isLogin && [styles.tabActive, { backgroundColor: t.card }, Shadows.card(isDarkMode)]]}
                 onPress={() => setIsLogin(true)}
               >
-                <Text style={[styles.tabText, isLogin && styles.tabTextActive]}>
-                  Sign In
-                </Text>
+                <Text style={[Typography.bodySemibold, { color: isLogin ? t.accent : t.textTertiary }]}>Sign In</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.tab, !isLogin && styles.tabActive]}
+                style={[styles.tab, !isLogin && [styles.tabActive, { backgroundColor: t.card }, Shadows.card(isDarkMode)]]}
                 onPress={() => setIsLogin(false)}
               >
-                <Text style={[styles.tabText, !isLogin && styles.tabTextActive]}>
-                  Sign Up
-                </Text>
+                <Text style={[Typography.bodySemibold, { color: !isLogin ? t.accent : t.textTertiary }]}>Sign Up</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Seed login hint */}
+            {/* Demo hint */}
             {isLogin && (
-              <View style={styles.hint}>
-                <Ionicons name="information-circle" size={16} color="#6C5CE7" />
-                <Text style={styles.hintText}>
-                  Demo: arjun@team.com / password123
-                </Text>
+              <View style={[styles.hint, { backgroundColor: t.accentSoft }]}>
+                <Ionicons name="information-circle" size={16} color={t.accent} />
+                <Text style={[Typography.captionSmall, { color: t.accent }]}>Demo: arjun@team.com / password123</Text>
               </View>
             )}
 
-            {/* Name field (sign up only) */}
+            {/* Name */}
             {!isLogin && (
-              <View style={styles.inputGroup}>
-                <View style={styles.inputIcon}>
-                  <Ionicons name="person-outline" size={20} color="#A29BFE" />
-                </View>
+              <View style={[styles.inputGroup, { backgroundColor: t.input, borderColor: t.border }]}>
+                <Ionicons name="person-outline" size={20} color={t.accent} style={{ marginLeft: 16 }} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: t.text }]}
                   placeholder="Full Name"
-                  placeholderTextColor="#B2BEC3"
+                  placeholderTextColor={t.textTertiary}
                   value={name}
                   onChangeText={setName}
                 />
@@ -138,14 +125,12 @@ export default function LoginScreen() {
             )}
 
             {/* Email */}
-            <View style={styles.inputGroup}>
-              <View style={styles.inputIcon}>
-                <Ionicons name="mail-outline" size={20} color="#A29BFE" />
-              </View>
+            <View style={[styles.inputGroup, { backgroundColor: t.input, borderColor: t.border }]}>
+              <Ionicons name="mail-outline" size={20} color={t.accent} style={{ marginLeft: 16 }} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: t.text }]}
                 placeholder="Email Address"
-                placeholderTextColor="#B2BEC3"
+                placeholderTextColor={t.textTertiary}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -154,25 +139,23 @@ export default function LoginScreen() {
             </View>
 
             {/* Password */}
-            <View style={styles.inputGroup}>
-              <View style={styles.inputIcon}>
-                <Ionicons name="lock-closed-outline" size={20} color="#A29BFE" />
-              </View>
+            <View style={[styles.inputGroup, { backgroundColor: t.input, borderColor: t.border }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={t.accent} style={{ marginLeft: 16 }} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: t.text }]}
                 placeholder="Password"
-                placeholderTextColor="#B2BEC3"
+                placeholderTextColor={t.textTertiary}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
               />
             </View>
 
-            {/* Submit button */}
+            {/* Submit */}
             <TouchableOpacity onPress={handleSubmit} activeOpacity={0.8} disabled={isLoading}>
               <LinearGradient
-                colors={['#6C5CE7', '#A29BFE']}
-                style={[styles.loginBtn, isLoading && { opacity: 0.7 }]}
+                colors={isDarkMode ? ['#7C6EF7', '#5B50C9'] : ['#6C5CE7', '#A29BFE']}
+                style={[styles.loginBtn, isLoading && { opacity: 0.7 }, Shadows.button(isDarkMode)]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
@@ -180,7 +163,7 @@ export default function LoginScreen() {
                   <ActivityIndicator color="#FFF" />
                 ) : (
                   <>
-                    <Text style={styles.loginBtnText}>
+                    <Text style={[Typography.headingSmall, { color: '#FFF' }]}>
                       {isLogin ? 'Sign In' : 'Create Account'}
                     </Text>
                     <Ionicons name="arrow-forward" size={20} color="#FFF" />
@@ -196,7 +179,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FE' },
+  container: { flex: 1 },
   header: {
     paddingTop: 60,
     paddingBottom: 40,
@@ -206,86 +189,39 @@ const styles = StyleSheet.create({
   },
   headerContent: { alignItems: 'center' },
   logoIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: '#FFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    width: 64, height: 64, borderRadius: 20, backgroundColor: '#FFF',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1, shadowRadius: 12, elevation: 6,
   },
-  headerTitle: { fontSize: 28, fontWeight: '700', color: '#FFF', marginBottom: 4 },
-  headerSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)' },
   formContainer: { flex: 1, marginTop: -20 },
   scrollContent: { padding: 20 },
   card: {
-    backgroundColor: '#FFF',
-    borderRadius: 24,
+    borderRadius: Radius.xxl,
     padding: 24,
-    shadowColor: '#6C5CE7',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 6,
+    borderWidth: 1,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#F1F3F8',
-    borderRadius: 14,
+    borderRadius: Radius.lg,
     padding: 4,
     marginBottom: 20,
   },
-  tab: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  tabActive: {
-    backgroundColor: '#FFF',
-    shadowColor: '#6C5CE7',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  tabText: { fontSize: 15, fontWeight: '600', color: '#B2BEC3' },
-  tabTextActive: { color: '#6C5CE7' },
+  tab: { flex: 1, paddingVertical: 12, borderRadius: Radius.md, alignItems: 'center' },
+  tabActive: {},
   hint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#6C5CE710',
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 16,
-    gap: 6,
+    flexDirection: 'row', alignItems: 'center',
+    padding: 10, borderRadius: Radius.md, marginBottom: 16, gap: 6,
   },
-  hintText: { fontSize: 12, color: '#6C5CE7', fontWeight: '500' },
   inputGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FE',
-    borderRadius: 14,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#E8ECF4',
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: Radius.lg, marginBottom: 14, borderWidth: 1,
   },
-  inputIcon: { paddingLeft: 16 },
   input: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    color: '#1A1A2E',
+    flex: 1, paddingVertical: 16, paddingHorizontal: 12, fontSize: 15,
   },
   loginBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 14,
-    gap: 8,
-    marginTop: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 16, borderRadius: Radius.lg, gap: 8, marginTop: 8,
   },
-  loginBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
 });

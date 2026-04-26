@@ -1,103 +1,94 @@
 /**
- * Bottom tab navigator with 5 tabs:
- * Dashboard (Home), Analytics, Add Expense (center FAB), Calendar, Team.
+ * Tab layout — clean bottom nav with FAB center button.
  */
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '@/context/app-context';
+import { getTheme } from '@/constants/theme';
 
 export default function TabLayout() {
   const { isDarkMode } = useApp();
-  const tabBg = isDarkMode ? '#161B22' : '#FFFFFF';
-  const tabBorder = isDarkMode ? '#21262D' : '#F0F0F5';
+  const t = getTheme(isDarkMode);
 
   return (
     <Tabs
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#6C5CE7',
-        tabBarInactiveTintColor: '#B2BEC3',
+        tabBarActiveTintColor: t.accent,
+        tabBarInactiveTintColor: t.tabInactive,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginBottom: Platform.OS === 'ios' ? 0 : 4 },
         tabBarStyle: {
-          backgroundColor: tabBg,
-          borderTopColor: tabBorder,
+          backgroundColor: t.tabBar,
+          borderTopColor: t.tabBarBorder,
           borderTopWidth: 1,
-          height: 65,
-          paddingBottom: 8,
-          paddingTop: 8,
-          elevation: 20,
-          shadowColor: '#6C5CE7',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
+          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingTop: 6,
+          elevation: 0,
+          shadowOpacity: 0,
         },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-        },
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = 'grid-outline';
-
-          if (route.name === 'index') {
-            iconName = focused ? 'grid' : 'grid-outline';
-          } else if (route.name === 'analytics') {
-            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
-          } else if (route.name === 'add-expense') {
-            // Center FAB-style icon
-            return (
-              <View style={styles.fabTab}>
-                <LinearGradient
-                  colors={['#6C5CE7', '#A29BFE']}
-                  style={styles.fabTabGrad}
-                >
-                  <Ionicons name="add" size={26} color="#FFF" />
-                </LinearGradient>
-              </View>
-            );
-          } else if (route.name === 'calendar') {
-            iconName = focused ? 'calendar' : 'calendar-outline';
-          } else if (route.name === 'team') {
-            iconName = focused ? 'people' : 'people-outline';
-          }
-
-          return <Ionicons name={iconName} size={22} color={color} />;
-        },
-      })}
+      }}
     >
       <Tabs.Screen
         name="index"
-        options={{ tabBarLabel: 'Home' }}
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
+          ),
+        }}
       />
       <Tabs.Screen
         name="analytics"
-        options={{ tabBarLabel: 'Analytics' }}
+        options={{
+          title: 'Analytics',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'pie-chart' : 'pie-chart-outline'} size={22} color={color} />
+          ),
+        }}
       />
       <Tabs.Screen
         name="add-expense"
-        options={{ tabBarLabel: '' }}
+        options={{
+          title: '',
+          tabBarIcon: () => (
+            <View style={[styles.fab, { backgroundColor: t.accent }]}>
+              <Ionicons name="add" size={28} color="#FFF" />
+            </View>
+          ),
+        }}
       />
       <Tabs.Screen
         name="calendar"
-        options={{ tabBarLabel: 'Calendar' }}
+        options={{
+          title: 'Calendar',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={22} color={color} />
+          ),
+        }}
       />
       <Tabs.Screen
         name="team"
-        options={{ tabBarLabel: 'Team' }}
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} />
+          ),
+        }}
       />
     </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
-  fabTab: { marginTop: -20 },
-  fabTabGrad: {
+  fab: {
     width: 52,
     height: 52,
-    borderRadius: 18,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: Platform.OS === 'ios' ? 20 : 24,
     shadowColor: '#6C5CE7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
