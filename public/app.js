@@ -145,16 +145,25 @@ function renderLogin() {
     $('#btn-submit').onclick = async () => {
       const email = $('#inp-email').value.trim();
       const pass = $('#inp-pass').value.trim();
+      
+      // 1. Grab the name BEFORE the DOM re-renders (if we are signing up)
+      const name = !isLogin ? $('#inp-name').value.trim() : '';
+
+      // 2. Validate everything up front
       if (!email || !pass) return toast('Please fill all fields', 'error');
-      loading = true; draw();
+      if (!isLogin && !name) return toast('Name is required', 'error');
+
+      // 3. Now it is safe to re-render the UI for the loading state
+      loading = true; 
+      draw(); 
+
       try {
         if (isLogin) {
           const data = await api.login(email, pass);
           api.setToken(data.token);
           state.user = data.user;
         } else {
-          const name = $('#inp-name').value.trim();
-          if (!name) { loading = false; draw(); return toast('Name is required', 'error'); }
+          // 4. Use the `name` variable we safely extracted earlier
           const data = await api.register(name, email, pass);
           api.setToken(data.token);
           state.user = data.user;
@@ -163,7 +172,10 @@ function renderLogin() {
         await loadData();
         navigate('dashboard');
         toast('Welcome! 🎉', 'success');
-      } catch (err) { toast(err.message, 'error'); }
+      } catch (err) { 
+        toast(err.message, 'error'); 
+      }
+      
       loading = false; draw();
     };
     $$('.input-group input').forEach(inp => {

@@ -1,0 +1,42 @@
+# 🚫 Native / Android
+android/
+ios/
+frontend/android/
+frontend/ios/
+
+# 🚫 Build outputs
+build/
+dist/
+web-build/
+.expo/
+.gradle/
+.cxx/
+
+# 🚫 Node modules
+node_modules/
+
+# 🚫 APK / AAB files
+*.apk
+*.aab
+
+# 🚫 Git + cache
+.git/
+.gitignore
+
+# 🚫 Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 🚫 Env files
+.env*
+!.env.example
+
+# 🚫 IDE junk
+.idea/
+.vscode/
+
+# 🚫 OS junk
+.DS_Store
+Thumbs.db
